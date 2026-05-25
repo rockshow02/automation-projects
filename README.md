@@ -32,7 +32,7 @@ Saya spesialis membantu bisnis mengotomasi proses yang masih dikerjakan secara m
 Google Sheets → n8n Scheduler → Format Data → Gmail
 ```
 
-📹 [Lihat Demo Video](#) · 📄 [Lihat Workflow](#demo-1-email-notif)
+📹 [Lihat Demo Video](https://youtube.com/shorts/BmgjRkGhLB0?si=1iuKSKjxtqMgNXoV) · 📄 [Lihat Workflow](#demo-1-email-notif)
 
 ---
 

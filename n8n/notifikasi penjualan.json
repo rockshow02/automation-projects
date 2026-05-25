@@ -1,0 +1,120 @@
+{
+  "name": "notifikasi penjualan",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1awyO-ldAiDJrpviuHn07eFsCmERwq2QOZ26wooXLZFU",
+          "mode": "list",
+          "cachedResultName": "Data Penjualan Elpiji",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1awyO-ldAiDJrpviuHn07eFsCmERwq2QOZ26wooXLZFU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 513132859,
+          "mode": "list",
+          "cachedResultName": "Form Responses 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1awyO-ldAiDJrpviuHn07eFsCmERwq2QOZ26wooXLZFU/edit#gid=513132859"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "cba21798-0c49-4e88-b03d-156048edfcc6",
+      "name": "Google Sheets Trigger",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "db3NVIOT0mhs5oQ6",
+          "name": "Google Sheets Trigger OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\n\nconst findVal = (obj, key) => {\n  const k = Object.keys(obj).find(k => k.trim() === key);\n  return k ? obj[k] : null;\n};\n\nconst tabung = findVal(row, 'Ukuran Tabung') || '-';\nconst jumlah = findVal(row, 'Jumlah Tabung Terjual') || 0;\nconst harga = findVal(row, 'Harga per Tabung (Rp)') || 0;\nconst total = findVal(row, 'Total (Rp)') || (jumlah * harga);\nconst pembeli = findVal(row, 'Nama Pembeli') || 'Umum';\nconst tanggal = findVal(row, 'Tanggal') || '-';\nconst waktu = new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});\n\nconst pesan = `✅ *PENJUALAN BARU*\n📅 ${tanggal} | ⏰ ${waktu}\n🫙 ${tabung} — ${jumlah} tabung\n👤 ${pembeli}\n💰 Total: Rp ${Number(total).toLocaleString('id-ID')}`;\n\nreturn [{ json: { pesan } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "39f6e5f1-5a94-40ec-98a2-8e923b803738",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "sendTo": "adi.yansyaaah@gmail.com",
+        "subject": "Penjualan Baru - Gas Elpiji",
+        "emailType": "text",
+        "message": "={{ $json.pesan }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "dbb7ce88-93e7-4422-817b-1fe4e957626e",
+      "name": "Send a message",
+      "webhookId": "50a477b9-ab71-4aa3-848c-f580de680268",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "JlxiYroSpYvBLp2T",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "bd42282a-9d74-46e0-a6b0-c6fb07f68c19",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e69ae1847f41ccee34ca7282c64d31c58ff4574dcd54bad959a8db0c7e9a1861"
+  },
+  "id": "WF3q7wdO95nk2O9E",
+  "tags": []
+}

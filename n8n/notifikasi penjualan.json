@@ -57,25 +57,23 @@
     },
     {
       "parameters": {
-        "sendTo": "adi.yansyaaah@gmail.com",
-        "subject": "Penjualan Baru - Gas Elpiji",
-        "emailType": "text",
-        "message": "={{ $json.pesan }}",
-        "options": {}
+        "chatId": "5990513142",
+        "text": "={{ $json.pesan }}",
+        "additionalFields": {}
       },
-      "type": "n8n-nodes-base.gmail",
-      "typeVersion": 2.2,
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
       "position": [
         416,
         0
       ],
-      "id": "dbb7ce88-93e7-4422-817b-1fe4e957626e",
-      "name": "Send a message",
-      "webhookId": "50a477b9-ab71-4aa3-848c-f580de680268",
+      "id": "49fb17a7-b5fe-4336-a1be-5710701c256a",
+      "name": "Send a text message",
+      "webhookId": "06acfea1-d80b-4566-8ead-4c8f95a9c291",
       "credentials": {
-        "gmailOAuth2": {
-          "id": "JlxiYroSpYvBLp2T",
-          "name": "Gmail OAuth2 API"
+        "telegramApi": {
+          "id": "soCIQvP4cPvfjKQ1",
+          "name": "Telegram account"
         }
       }
     }
@@ -97,7 +95,7 @@
       "main": [
         [
           {
-            "node": "Send a message",
+            "node": "Send a text message",
             "type": "main",
             "index": 0
           }
@@ -110,7 +108,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "bd42282a-9d74-46e0-a6b0-c6fb07f68c19",
+  "versionId": "35f56693-31f7-4910-9288-48645178cf1a",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "e69ae1847f41ccee34ca7282c64d31c58ff4574dcd54bad959a8db0c7e9a1861"

@@ -52,12 +52,10 @@ Google Forms → Make.com → WhatsApp (CallMeBot)
 
 ## 💼 Layanan yang Ditawarkan
 
-| Layanan                   | Deskripsi                                                      | Estimasi Harga         |
-| ------------------------- | -------------------------------------------------------------- | ---------------------- |
-| **Automation Sederhana**  | Notifikasi, pengiriman email otomatis, sinkronisasi 2 platform | Mulai Rp 500.000       |
-| **Dashboard & Reporting** | Visualisasi data real-time dengan React + SQL                  | Mulai Rp 2.000.000     |
-| **Custom Integration**    | Hubungkan sistem yang berbeda via API                          | Mulai Rp 1.500.000     |
-| **Maintenance Bulanan**   | Monitor, update, dan support workflow aktif                    | Mulai Rp 300.000/bulan |
+- Automation workflow (notifikasi, laporan, sinkronisasi data)
+- Dashboard & reporting real-time
+- Integrasi API antar sistem
+- Maintenance & monitoring workflow aktif
 
 ---
 

@@ -1,0 +1,162 @@
+{
+  "name": "Stok",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1awyO-ldAiDJrpviuHn07eFsCmERwq2QOZ26wooXLZFU",
+          "mode": "list",
+          "cachedResultName": "Data Penjualan Elpiji",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1awyO-ldAiDJrpviuHn07eFsCmERwq2QOZ26wooXLZFU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 510913662,
+          "mode": "list",
+          "cachedResultName": "Form Responses 2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1awyO-ldAiDJrpviuHn07eFsCmERwq2QOZ26wooXLZFU/edit#gid=510913662"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "06bc64be-cb88-49df-8922-92c09a5ea826",
+      "name": "Google Sheets Trigger",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "db3NVIOT0mhs5oQ6",
+          "name": "Google Sheets Trigger OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\nconst findVal = (obj, key) => {\n  const k = Object.keys(obj).find(k => k.trim() === key);\n  return k ? obj[k] : null;\n};\n\nconst stokAwal = parseInt(findVal(row, 'Stok Awal (tabung)')) || 0;\nconst tanggal = findVal(row, 'tanggal') || '-';\n\nreturn [{ json: { stokAwal, tanggal, sisaStok: stokAwal } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "4dbd3910-d36f-4172-b553-03610e57a3d5",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "65d9e56a-8b30-4aff-ae4f-95fcf1c8a7d1",
+              "leftValue": "={{ $json.sisaStok }}",
+              "rightValue": 10,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "a2ec147b-3b29-4c55-b7b8-61ec5fe11116",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "5990513142",
+        "text": "=⚠️ STOK MENIPIS!\n📅 {{ $json.tanggal }}\n🫙 Sisa stok: {{ $json.sisaStok }} tabung\nSegera hubungi agen untuk restock!",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        624,
+        -96
+      ],
+      "id": "7e92fc2d-7c4e-4fb5-b1a1-6294dd3351c5",
+      "name": "Send a text message",
+      "webhookId": "1e67298f-69bd-4510-864c-969ace7dbab6",
+      "credentials": {
+        "telegramApi": {
+          "id": "soCIQvP4cPvfjKQ1",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "faa11fbb-5014-4138-b853-111e9f9df886",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e69ae1847f41ccee34ca7282c64d31c58ff4574dcd54bad959a8db0c7e9a1861"
+  },
+  "id": "4omooATMnLTQ3B9v",
+  "tags": []
+}

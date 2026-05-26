@@ -55,7 +55,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const rows = $input.all().map(r => r.json);\nconst hari = new Date().toLocaleDateString('id-ID', {day:'2-digit', month:'long', year:'numeric'});\n\nconst HARGA_BELI = 16000;\nconst HARGA_JUAL = 19000;\nconst DANA_TABUNGAN = 10000;\n\nlet totalTabung = 0, totalOmset = 0;\nconst ringkasan = {};\n\nfor (const r of rows) {\n  const findVal = (obj, key) => {\n    const k = Object.keys(obj).find(k => k.trim() === key);\n    return k ? obj[k] : null;\n  };\n  const jml = parseInt(findVal(r, 'Jumlah Tabung Terjual')) || 0;\n  const ukuran = findVal(r, 'Ukuran Tabung') || 'Lain';\n  if (jml > 0) {\n    totalTabung += jml;\n    totalOmset += jml * HARGA_JUAL;\n    ringkasan[ukuran] = (ringkasan[ukuran] || 0) + jml;\n  }\n}\n\nconst detail = Object.entries(ringkasan)\n  .map(([k,v]) => `  • ${k}: ${v} tabung`).join('\\n') || '  • Belum ada penjualan';\n\nconst stokAwal = parseInt($('Get row(s) in sheet1').first()?.json?.['Stok Awal (tabung)']) || 0;\nconst sisaStok = stokAwal > 0 ? stokAwal - totalTabung : 'Belum diinput';\nconst statusStok = stokAwal === 0 ? '⚠️ Stok pagi belum diinput' : sisaStok <= 10 ? '⚠️ MENIPIS' : '✅ Aman';\n\nconst modalHari = totalTabung * HARGA_BELI;\nconst keuntunganKotor = totalTabung * (HARGA_JUAL - HARGA_BELI);\nconst keuntunganBersih = keuntunganKotor - DANA_TABUNGAN;\n\nconst pesan = `📊 LAPORAN HARIAN — ${hari}\n\n🫙 Total terjual: ${totalTabung} tabung\n${detail}\n\n📦 Sisa stok: ${typeof sisaStok === 'number' ? sisaStok + ' tabung' : sisaStok} ${statusStok}\n\n💰 Omset hari ini: Rp ${totalOmset.toLocaleString('id-ID')}\n🏭 Modal: Rp ${modalHari.toLocaleString('id-ID')}\n📈 Keuntungan kotor: Rp ${keuntunganKotor.toLocaleString('id-ID')}\n🏦 Dana tabungan: Rp ${DANA_TABUNGAN.toLocaleString('id-ID')}\n✅ Keuntungan bersih: Rp ${keuntunganBersih.toLocaleString('id-ID')}\n\n_Otomatis dikirim jam 21.00_`;\n\nreturn [{ json: { pesan } }];"
+        "jsCode": "const rows = $('Get row(s) in sheet').all().map(r => r.json);\nconst hari = new Date().toLocaleDateString('id-ID', {day:'2-digit', month:'long', year:'numeric'});\n\nconst HARGA_BELI = 16000;\nconst HARGA_JUAL = 19000;\nconst DANA_TABUNGAN = 10000;\n\nlet totalTabung = 0, totalOmset = 0;\nlet totalLunas = 0, totalHutang = 0, totalDP = 0, totalDPUang = 0;\nconst ringkasan = {};\n\nfor (const r of rows) {\n  const findVal = (obj, key) => {\n    const k = Object.keys(obj).find(k => k.trim() === key);\n    return k ? obj[k] : null;\n  };\n  const jml = parseInt(findVal(r, 'Jumlah Tabung Terjual')) || 0;\n  const ukuran = findVal(r, 'Ukuran Tabung') || 'Lain';\n  const status = (r['Status Pembayaran'] || 'Lunas').trim();\n  const dibayar = parseInt(r['Jumlah Dibayar (Rp)']) || 0;\n\n  if (jml > 0) {\n    totalTabung += jml;\n    totalOmset += jml * HARGA_JUAL;\n    ringkasan[ukuran] = (ringkasan[ukuran] || 0) + jml;\n\n    if (status === 'Lunas') totalLunas += jml * HARGA_JUAL;\n    else if (status === 'Hutang') totalHutang += jml * HARGA_JUAL;\n    else if (status === 'DP') {\n      totalDP += jml * HARGA_JUAL;\n      totalDPUang += dibayar;\n    }\n  }\n}\n\nconst detail = Object.entries(ringkasan)\n  .map(([k,v]) => `  • ${k}: ${v} tabung`).join('\\n') || '  • Belum ada penjualan';\n\nconst stokNode = $('Get row(s) in sheet1').all();\nconst findStok = (obj, key) => {\n  const k = Object.keys(obj).find(k => k.trim() === key);\n  return k ? obj[k] : null;\n};\nconst stokAwal = stokNode.length > 0 ? parseInt(findStok(stokNode[0].json, 'Stok Awal (tabung)')) || 0 : 0;\nconst sisaStok = stokAwal > 0 ? stokAwal - totalTabung : 'Belum diinput';\nconst statusStok = stokAwal === 0 ? '⚠️ Stok pagi belum diinput' : sisaStok <= 10 ? '⚠️ MENIPIS' : '✅ Aman';\n\nconst modalHari = totalTabung * HARGA_BELI;\nconst keuntunganKotor = totalTabung * (HARGA_JUAL - HARGA_BELI);\nconst keuntunganBersih = keuntunganKotor - DANA_TABUNGAN;\nconst uangDitangan = totalLunas + totalDPUang;\nconst sisaTagihan = totalHutang + (totalDP - totalDPUang);\n\nconst pesan = `📊 LAPORAN HARIAN — ${hari}\n\n🫙 Total terjual: ${totalTabung} tabung\n${detail}\n\n📦 Sisa stok: ${typeof sisaStok === 'number' ? sisaStok + ' tabung' : sisaStok} ${statusStok}\n\n💰 Omset hari ini: Rp ${totalOmset.toLocaleString('id-ID')}\n✅ Sudah dibayar: Rp ${uangDitangan.toLocaleString('id-ID')}\n⏳ Belum dibayar: Rp ${sisaTagihan.toLocaleString('id-ID')}\n\n🏭 Modal: Rp ${modalHari.toLocaleString('id-ID')}\n📈 Keuntungan kotor: Rp ${keuntunganKotor.toLocaleString('id-ID')}\n🏦 Dana tabungan: Rp ${DANA_TABUNGAN.toLocaleString('id-ID')}\n✅ Keuntungan bersih: Rp ${keuntunganBersih.toLocaleString('id-ID')}\n\n_Otomatis dikirim jam 21.00_`;\n\nreturn [{ json: { pesan } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -108,7 +108,7 @@
           "values": [
             {
               "lookupColumn": "tanggal",
-              "lookupValue": "={{ $now.format('yyyy-MM-dd') }}"
+              "lookupValue": "={{ $now.format('dd/MM/yyyy') }}"
             }
           ]
         },
@@ -122,6 +122,7 @@
       ],
       "id": "f3c44d68-3fa7-49de-9a85-a893609a9cb4",
       "name": "Get row(s) in sheet1",
+      "executeOnce": true,
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "nes5CmZPiATizVBk",
@@ -182,7 +183,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "3c10c09e-5aca-40d3-a68d-cace05288a8d",
+  "versionId": "ebadc495-d218-4894-8acb-832b775421fb",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "e69ae1847f41ccee34ca7282c64d31c58ff4574dcd54bad959a8db0c7e9a1861"

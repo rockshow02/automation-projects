@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
-const API = "http://localhost:5000/api";
+// const API = "http://localhost:5000/api";
+const API = "https://adiyansyaah.pythonanywhere.com/api";
 
 const fmt = (n) => new Intl.NumberFormat("id-ID").format(n || 0);
 const fmtDate = (d) => new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short" });

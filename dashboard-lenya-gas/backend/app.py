@@ -1,9 +1,10 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from database import db, Penjualan, StokHarian
-from datetime import datetime, date
+from database import db, Penjualan, StokHarian, Penebusan
+from datetime import datetime, date, timedelta
 from sqlalchemy import func
 import os
+import requests
 
 app = Flask(__name__)
 CORS(app)
@@ -16,6 +17,16 @@ db.init_app(app)
 
 with app.app_context():
     db.create_all()
+
+TELEGRAM_TOKEN = "8916223771:AAHx4we7KkRj1cKHDdECaiSWksnT2pfB5aU"
+TELEGRAM_CHAT_ID = "5990513142"
+
+def kirim_telegram(pesan):
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+        requests.post(url, json={"chat_id": TELEGRAM_CHAT_ID, "text": pesan, "parse_mode": "Markdown"})
+    except Exception:
+        pass
 
 # ── PENJUALAN ──────────────────────────────────────────
 
@@ -41,6 +52,29 @@ def tambah_penjualan():
     )
     db.session.add(p)
     db.session.commit()
+
+    waktu = datetime.now().strftime('%H.%M')
+    total = p.jumlah * p.harga_jual
+    if p.status_bayar == 'Lunas':
+        status_line = '✅ Lunas'
+    elif p.status_bayar == 'Hutang':
+        status_line = '⏳ Hutang (belum bayar)'
+    else:
+        status_line = f'💳 DP: Rp {p.jumlah_dibayar:,} | Sisa Rp {total - p.jumlah_dibayar:,}'
+
+    pesan = f"""🧾 *STRUK PENJUALAN*
+━━━━━━━━━━━━━━━━
+📅 {p.tanggal} | ⏰ {waktu}
+👤 {p.nama_pembeli or 'Umum'}
+━━━━━━━━━━━━━━━━
+🫙 {p.ukuran_tabung} × {p.jumlah} tabung
+💵 Harga: Rp {p.harga_jual:,}/tabung
+💰 Total: Rp {total:,}
+━━━━━━━━━━━━━━━━
+{status_line}
+━━━━━━━━━━━━━━━━"""
+    kirim_telegram(pesan)
+
     return jsonify({'success': True, 'id': p.id}), 201
 
 @app.route('/api/penjualan', methods=['GET'])
@@ -97,6 +131,79 @@ def get_stok():
         'sisa': s.stok_awal - total_jual
     })
 
+# ── PENEBUSAN ─────────────────────────────────────────
+
+@app.route('/api/penebusan', methods=['POST'])
+def tambah_penebusan():
+    data = request.json
+    tgl_str = data['tanggal_tebus']
+    try:
+        tgl_tebus = datetime.strptime(tgl_str, '%Y-%m-%d').date()
+    except ValueError:
+        tgl_tebus = datetime.strptime(tgl_str, '%d/%m/%Y').date()
+
+    tgl_datang_str = data.get('tanggal_datang', str(tgl_tebus + timedelta(days=1)))
+    try:
+        tgl_datang = datetime.strptime(tgl_datang_str, '%Y-%m-%d').date()
+    except ValueError:
+        tgl_datang = datetime.strptime(tgl_datang_str, '%d/%m/%Y').date()
+
+    jumlah = int(data['jumlah_tabung'])
+    harga = int(data.get('harga_per_tabung', 16000))
+    total = jumlah * harga
+
+    p = Penebusan(
+        tanggal_tebus=tgl_tebus,
+        jumlah_tabung=jumlah,
+        harga_per_tabung=harga,
+        total_modal=total,
+        tanggal_datang=tgl_datang,
+        status='Menunggu',
+        catatan=data.get('catatan', '')
+    )
+    db.session.add(p)
+    db.session.commit()
+
+    pesan = f"""📋 *PENEBUSAN BARU*
+━━━━━━━━━━━━━━━━
+📅 Tebus: {tgl_tebus}
+🚚 Gas datang: {tgl_datang}
+🫙 Jumlah: {jumlah} tabung
+💸 Modal: Rp {total:,}
+⏳ Status: Menunggu kedatangan
+━━━━━━━━━━━━━━━━"""
+    kirim_telegram(pesan)
+
+    return jsonify({'success': True, 'id': p.id}), 201
+
+@app.route('/api/penebusan', methods=['GET'])
+def get_penebusan():
+    rows = Penebusan.query.order_by(Penebusan.tanggal_datang.desc()).all()
+    return jsonify([r.to_dict() for r in rows])
+
+@app.route('/api/penebusan/<int:id>/konfirmasi', methods=['PUT'])
+def konfirmasi_datang(id):
+    p = Penebusan.query.get_or_404(id)
+    p.status = 'Sudah Datang'
+    p.waktu_konfirmasi = datetime.utcnow()
+    db.session.commit()
+
+    pesan = f"""✅ *GAS SUDAH DATANG!*
+━━━━━━━━━━━━━━━━
+🫙 {p.jumlah_tabung} tabung 3 Kg
+📅 Tiba: {date.today()}
+💸 Modal: Rp {p.total_modal:,}
+━━━━━━━━━━━━━━━━
+Jangan lupa input stok pagi! 📦"""
+    kirim_telegram(pesan)
+
+    return jsonify({'success': True})
+
+@app.route('/api/penebusan/menunggu', methods=['GET'])
+def get_penebusan_menunggu():
+    rows = Penebusan.query.filter_by(status='Menunggu').order_by(Penebusan.tanggal_datang).all()
+    return jsonify([r.to_dict() for r in rows])
+
 # ── LAPORAN ───────────────────────────────────────────
 
 @app.route('/api/laporan/hari-ini', methods=['GET'])
@@ -118,9 +225,14 @@ def laporan_hari_ini():
     stok_awal = stok.stok_awal if stok else 0
     sisa_stok = stok_awal - total_tabung if stok_awal else 0
 
+    penebusan_hari_ini = Penebusan.query.filter_by(tanggal_tebus=tgl).all()
+    total_modal_keluar = sum(p.total_modal for p in penebusan_hari_ini)
+
     modal = total_tabung * HARGA_BELI
     keuntungan_kotor = total_tabung * (rows[0].harga_jual - HARGA_BELI) if rows else 0
     keuntungan_bersih = keuntungan_kotor - DANA_TABUNGAN if total_tabung > 0 else 0
+    uang_masuk = total_lunas + total_dp_uang
+    saldo_kas = uang_masuk - total_modal_keluar
 
     return jsonify({
         'tanggal': tgl,
@@ -128,12 +240,14 @@ def laporan_hari_ini():
         'stok_awal': stok_awal,
         'sisa_stok': sisa_stok,
         'total_omset': total_omset,
-        'sudah_dibayar': total_lunas + total_dp_uang,
+        'sudah_dibayar': uang_masuk,
         'belum_dibayar': total_hutang + (total_dp - total_dp_uang),
         'modal': modal,
+        'modal_keluar': total_modal_keluar,
         'keuntungan_kotor': keuntungan_kotor,
         'dana_tabungan': DANA_TABUNGAN if total_tabung > 0 else 0,
         'keuntungan_bersih': keuntungan_bersih,
+        'saldo_kas': saldo_kas,
         'transaksi': [r.to_dict() for r in rows]
     })
 

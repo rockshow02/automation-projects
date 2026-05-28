@@ -40,3 +40,30 @@ class StokHarian(db.Model):
     tanggal = db.Column(db.Date, unique=True, nullable=False)
     stok_awal = db.Column(db.Integer, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Penebusan(db.Model):
+    __tablename__ = 'penebusan'
+    id = db.Column(db.Integer, primary_key=True)
+    tanggal_tebus = db.Column(db.Date, nullable=False)
+    jumlah_tabung = db.Column(db.Integer, nullable=False)
+    harga_per_tabung = db.Column(db.Integer, default=16000)
+    total_modal = db.Column(db.Integer, nullable=False)
+    tanggal_datang = db.Column(db.Date, nullable=False)
+    status = db.Column(db.String(20), default='Menunggu')
+    waktu_konfirmasi = db.Column(db.DateTime, nullable=True)
+    catatan = db.Column(db.String(255), default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tanggal_tebus': str(self.tanggal_tebus),
+            'jumlah_tabung': self.jumlah_tabung,
+            'harga_per_tabung': self.harga_per_tabung,
+            'total_modal': self.total_modal,
+            'tanggal_datang': str(self.tanggal_datang),
+            'status': self.status,
+            'waktu_konfirmasi': self.waktu_konfirmasi.isoformat() if self.waktu_konfirmasi else None,
+            'catatan': self.catatan,
+            'created_at': self.created_at.isoformat()
+        }

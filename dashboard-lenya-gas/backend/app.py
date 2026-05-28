@@ -249,14 +249,24 @@ def konfirmasi_datang(id):
     p = Penebusan.query.get_or_404(id)
     p.status = 'Sudah Datang'
     p.waktu_konfirmasi = datetime.utcnow()
+
+    # Auto update stok harian
+    tgl_hari_ini = date.today()
+    s = StokHarian.query.filter_by(tanggal=tgl_hari_ini).first()
+    if s:
+        s.stok_awal += p.jumlah_tabung
+    else:
+        s = StokHarian(tanggal=tgl_hari_ini, stok_awal=p.jumlah_tabung)
+        db.session.add(s)
+
     db.session.commit()
     pesan = f"""✅ *GAS SUDAH DATANG!*
 ━━━━━━━━━━━━━━━━
 🫙 {p.jumlah_tabung} tabung 3 Kg
-📅 Tiba: {date.today()}
+📅 Tiba: {tgl_hari_ini}
 💸 Modal: Rp {p.total_modal:,}
-━━━━━━━━━━━━━━━━
-Jangan lupa input stok pagi! 📦"""
+📦 Stok otomatis diupdate: {p.jumlah_tabung} tabung
+━━━━━━━━━━━━━━━━"""
     kirim_telegram(pesan)
     return jsonify({'success': True})
 

@@ -217,7 +217,12 @@ export default function App() {
                     <input type="text" placeholder="Nama pembeli" value={bookingForm.nama_pembeli} onChange={e => setBookingForm({ ...bookingForm, nama_pembeli: e.target.value })} style={inputStyle} required />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 13, color: "#8A9BAE", marginBottom: 6 }}>Jumlah Tabung</label>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <label style={{ fontSize: 13, color: "#8A9BAE" }}>Jumlah Tabung</label>
+                      <span style={{ fontSize: 12, color: laporan && laporan.sisa_stok > 0 ? "#00C896" : "#FF6B6B", fontWeight: 500 }}>
+                        {laporan ? `(Tersedia: ${laporan.sisa_stok} tabung)` : ""}
+                      </span>
+                    </div>
                     <input type="number" placeholder="contoh: 10" value={bookingForm.jumlah} onChange={e => setBookingForm({ ...bookingForm, jumlah: e.target.value })} style={inputStyle} required />
                   </div>
                   <div>
@@ -345,7 +350,33 @@ export default function App() {
 
         {/* PENEBUSAN */}
         {tab === "Penebusan" && (
-          <div style={{ ...cardStyle, overflow: "hidden", padding: 0 }}>
+          <div>
+            <div style={{ ...cardStyle, marginBottom: 16, border: "1px solid #FF6B6B44" }}>
+              <div style={{ fontWeight: 600, color: "#fff", marginBottom: 4 }}>💸 Input Penebusan ke Agen</div>
+              <div style={{ fontSize: 12, color: "#5A7A9A", marginBottom: 16 }}>Input H-1 sebelum gas datang. Stok otomatis terupdate saat konfirmasi gas datang.</div>
+              <form onSubmit={submitTebus}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                  {[{ label: "Tanggal Tebus", key: "tanggal_tebus", type: "date" }, { label: "Jumlah Tabung", key: "jumlah_tabung", type: "number", placeholder: "contoh: 50" }, { label: "Tanggal Gas Datang", key: "tanggal_datang", type: "date" }].map(f => (
+                    <div key={f.key}>
+                      <label style={{ display: "block", fontSize: 13, color: "#8A9BAE", marginBottom: 6 }}>{f.label}</label>
+                      <input type={f.type} placeholder={f.placeholder} value={tebusForm[f.key]} onChange={e => setTebusForm({ ...tebusForm, [f.key]: e.target.value })} style={inputStyle} required />
+                    </div>
+                  ))}
+                </div>
+                {tebusForm.jumlah_tabung && (
+                  <div style={{ margin: "12px 0", background: "#FF6B6B22", border: "1px solid #FF6B6B44", borderRadius: 8, padding: "10px 14px", fontSize: 14, color: "#FF6B6B" }}>
+                    💸 Total modal keluar: <strong>Rp {fmt(tebusForm.jumlah_tabung * tebusForm.harga_per_tabung)}</strong>
+                  </div>
+                )}
+                <div style={{ marginTop: 12 }}>
+                  <label style={{ display: "block", fontSize: 13, color: "#8A9BAE", marginBottom: 6 }}>Catatan</label>
+                  <input type="text" placeholder="opsional" value={tebusForm.catatan} onChange={e => setTebusForm({ ...tebusForm, catatan: e.target.value })} style={inputStyle} />
+                </div>
+                <button type="submit" style={{ ...btnPrimary, marginTop: 14, background: "#FF6B6B", color: "#fff" }}>Simpan Penebusan</button>
+              </form>
+            </div>
+
+            <div style={{ ...cardStyle, overflow: "hidden", padding: 0 }}>
             <div style={{ padding: "16px 20px", borderBottom: "1px solid #1E2A3D", fontWeight: 600, color: "#fff" }}>📋 Riwayat Penebusan</div>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -375,26 +406,12 @@ export default function App() {
               </table>
             </div>
           </div>
+          </div>
         )}
 
         {/* INPUT */}
         {tab === "Input" && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <div style={cardStyle}>
-              <div style={{ fontWeight: 600, color: "#fff", marginBottom: 16 }}>📦 Input Stok Pagi</div>
-              <form onSubmit={submitStok}>
-                <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: "block", fontSize: 13, color: "#8A9BAE", marginBottom: 6 }}>Tanggal</label>
-                  <input type="date" value={stokForm.tanggal} onChange={e => setStokForm({ ...stokForm, tanggal: e.target.value })} style={inputStyle} required />
-                </div>
-                <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: "block", fontSize: 13, color: "#8A9BAE", marginBottom: 6 }}>Stok Awal (tabung)</label>
-                  <input type="number" placeholder="contoh: 50" value={stokForm.stok_awal} onChange={e => setStokForm({ ...stokForm, stok_awal: e.target.value })} style={inputStyle} required />
-                </div>
-                <button type="submit" style={btnPrimary}>Simpan Stok</button>
-              </form>
-            </div>
-
             <div style={cardStyle}>
               <div style={{ fontWeight: 600, color: "#fff", marginBottom: 4 }}>🫙 Input Penjualan Langsung</div>
               <div style={{ fontSize: 12, color: "#5A7A9A", marginBottom: 14 }}>Untuk penjualan tanpa booking sebelumnya</div>
@@ -421,30 +438,6 @@ export default function App() {
               </form>
             </div>
 
-            <div style={{ ...cardStyle, border: "1px solid #FF6B6B44", gridColumn: "1/-1" }}>
-              <div style={{ fontWeight: 600, color: "#fff", marginBottom: 4 }}>💸 Input Penebusan ke Agen</div>
-              <div style={{ fontSize: 12, color: "#5A7A9A", marginBottom: 16 }}>Input H-1 sebelum gas datang.</div>
-              <form onSubmit={submitTebus}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-                  {[{ label: "Tanggal Tebus", key: "tanggal_tebus", type: "date" }, { label: "Jumlah Tabung", key: "jumlah_tabung", type: "number", placeholder: "contoh: 50" }, { label: "Tanggal Gas Datang", key: "tanggal_datang", type: "date" }].map(f => (
-                    <div key={f.key}>
-                      <label style={{ display: "block", fontSize: 13, color: "#8A9BAE", marginBottom: 6 }}>{f.label}</label>
-                      <input type={f.type} placeholder={f.placeholder} value={tebusForm[f.key]} onChange={e => setTebusForm({ ...tebusForm, [f.key]: e.target.value })} style={inputStyle} required />
-                    </div>
-                  ))}
-                </div>
-                {tebusForm.jumlah_tabung && (
-                  <div style={{ margin: "12px 0", background: "#FF6B6B22", border: "1px solid #FF6B6B44", borderRadius: 8, padding: "10px 14px", fontSize: 14, color: "#FF6B6B" }}>
-                    💸 Total modal keluar: <strong>Rp {fmt(tebusForm.jumlah_tabung * tebusForm.harga_per_tabung)}</strong>
-                  </div>
-                )}
-                <div style={{ marginTop: 12 }}>
-                  <label style={{ display: "block", fontSize: 13, color: "#8A9BAE", marginBottom: 6 }}>Catatan</label>
-                  <input type="text" placeholder="opsional" value={tebusForm.catatan} onChange={e => setTebusForm({ ...tebusForm, catatan: e.target.value })} style={inputStyle} />
-                </div>
-                <button type="submit" style={{ ...btnPrimary, marginTop: 14, background: "#FF6B6B", color: "#fff" }}>Simpan Penebusan</button>
-              </form>
-            </div>
           </div>
         )}
       </div>

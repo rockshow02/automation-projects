@@ -328,3 +328,96 @@ def get_hutang():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
+
+# ── LAPORAN EXTENDED ──────────────────────────────────
+
+@app.route('/api/laporan/periode', methods=['GET'])
+def laporan_periode():
+    dari = request.args.get('dari', date.today().isoformat())
+    sampai = request.args.get('sampai', date.today().isoformat())
+    
+    dari_date = datetime.strptime(dari, '%Y-%m-%d').date()
+    sampai_date = datetime.strptime(sampai, '%Y-%m-%d').date()
+    
+    rows = Penjualan.query.filter(
+        Penjualan.tanggal >= dari_date,
+        Penjualan.tanggal <= sampai_date
+    ).all()
+
+    HARGA_BELI = 16000
+    DANA_TABUNGAN = 10000
+
+    total_tabung = sum(r.jumlah for r in rows)
+    total_omset = sum(r.jumlah * r.harga_jual for r in rows)
+    total_lunas = sum(r.jumlah * r.harga_jual for r in rows if r.status_bayar == 'Lunas')
+    total_dp_uang = sum(r.jumlah_dibayar for r in rows if r.status_bayar == 'DP')
+    total_hutang = sum(r.jumlah * r.harga_jual for r in rows if r.status_bayar == 'Hutang')
+    total_dp = sum(r.jumlah * r.harga_jual for r in rows if r.status_bayar == 'DP')
+
+    penebusan = Penebusan.query.filter(
+        Penebusan.tanggal_tebus >= dari_date,
+        Penebusan.tanggal_tebus <= sampai_date
+    ).all()
+    total_modal_keluar = sum(p.total_modal for p in penebusan)
+
+    modal = total_tabung * HARGA_BELI
+    keuntungan_kotor = total_tabung * (19000 - HARGA_BELI)
+    hari_aktif = len(set(r.tanggal for r in rows))
+    keuntungan_bersih = keuntungan_kotor - (DANA_TABUNGAN * hari_aktif)
+    uang_masuk = total_lunas + total_dp_uang
+    saldo_kas = uang_masuk - total_modal_keluar
+
+    # Per hari breakdown
+    per_hari = {}
+    for r in rows:
+        tgl = str(r.tanggal)
+        if tgl not in per_hari:
+            per_hari[tgl] = {'tanggal': tgl, 'total_tabung': 0, 'omset': 0, 'transaksi': 0}
+        per_hari[tgl]['total_tabung'] += r.jumlah
+        per_hari[tgl]['omset'] += r.jumlah * r.harga_jual
+        per_hari[tgl]['transaksi'] += 1
+
+    return jsonify({
+        'dari': dari,
+        'sampai': sampai,
+        'total_tabung': total_tabung,
+        'total_omset': total_omset,
+        'sudah_dibayar': uang_masuk,
+        'belum_dibayar': total_hutang + (total_dp - total_dp_uang),
+        'modal': modal,
+        'modal_keluar': total_modal_keluar,
+        'keuntungan_kotor': keuntungan_kotor,
+        'dana_tabungan': DANA_TABUNGAN * hari_aktif,
+        'keuntungan_bersih': keuntungan_bersih,
+        'saldo_kas': saldo_kas,
+        'hari_aktif': hari_aktif,
+        'per_hari': sorted(per_hari.values(), key=lambda x: x['tanggal']),
+        'transaksi': [r.to_dict() for r in rows]
+    })
+
+@app.route('/api/penjualan/cari', methods=['GET'])
+def cari_penjualan():
+    q = request.args.get('q', '')
+    dari = request.args.get('dari', None)
+    sampai = request.args.get('sampai', None)
+    page = int(request.args.get('page', 1))
+    per_page = int(request.args.get('per_page', 20))
+
+    query = Penjualan.query
+    if q:
+        query = query.filter(Penjualan.nama_pembeli.ilike(f'%{q}%'))
+    if dari:
+        query = query.filter(Penjualan.tanggal >= datetime.strptime(dari, '%Y-%m-%d').date())
+    if sampai:
+        query = query.filter(Penjualan.tanggal <= datetime.strptime(sampai, '%Y-%m-%d').date())
+
+    total = query.count()
+    rows = query.order_by(Penjualan.tanggal.desc(), Penjualan.created_at.desc()).offset((page-1)*per_page).limit(per_page).all()
+
+    return jsonify({
+        'total': total,
+        'page': page,
+        'per_page': per_page,
+        'total_pages': (total + per_page - 1) // per_page,
+        'data': [r.to_dict() for r in rows]
+    })
